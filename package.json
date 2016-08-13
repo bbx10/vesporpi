@@ -1,0 +1,19 @@
+{
+  "name": "vesporpi",
+  "version": "1.0.0",
+  "description": "Raspberry Pi 3 Rover",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.14.0",
+    "johnny-five": "^0.9.61",
+    "raspi-io": "^6.1.0",
+    "rpi-ws281x-native": "^0.8.1",
+    "socket.io": "^1.4.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "bbx10node@gmail.com",
+  "license": "MIT"
+}

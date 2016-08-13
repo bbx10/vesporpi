@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name = "viewport" content = "width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0">
+<title>Raspi Vespor ROV</title>
+<style>
+body { font-family: Arial, Helvetica, Sans-Serif; }
+table { width: 100%; }
+td { width: 33%; font-size: 200%; text-align: center; }
+button { font-size: 150%; }
+.directionButton { background-color: #E0E0E0; border: 1px solid; }
+#webcam {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: -1;
+}
+
+#target {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: transparent;
+}
+
+#canvas_target {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: transparent;
+}
+
+#overlay {
+    position: absolute;
+    top: 540px;
+    left: 0px;
+    width: 100%;
+    height: 180px;
+    background-color: transparent;
+}
+#bForward {
+    position: absolute;
+}
+#bBackward {
+    position: absolute;
+}
+#bLeft {
+    position: absolute;
+}
+#bRight {
+    position: absolute;
+}
+#bLedon {
+    position: absolute;
+}
+#bLed50 {
+    position: absolute;
+}
+#bLedoff {
+    position: absolute;
+}
+#webSockStatus {
+    position: absolute;
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io();
+  socket.on('connect', function() {
+      console.log('socket connect');
+      WebSockOpen=2;
+      var e = document.getElementById('webSockStatus');
+      e.style.backgroundColor = 'green';
+      socket.on('disconnect', function() {
+          console.log('socket disconnect');
+          WebSockOpen=0;
+          var e = document.getElementById('webSockStatus');
+          e.style.backgroundColor = 'red';
+      });
+      socket.on('error', function(err) { console.log(err); });
+      socket.on('reconnect', function(num) { console.log(num); });
+      socket.on('LEDstatus', function(msg) {
+          console.log(msg.LEDstatus);
+          var eLedon = document.getElementById('bLedon');
+          var eLed50 = document.getElementById('bLed50');
+          var eLedoff = document.getElementById('bLedoff');
+          if (msg.LEDstatus === 'bLedon') {
+              eLedon.style.backgroundColor = 'red';
+              eLed50.style.backgroundColor = '';
+              eLedoff.style.color = '';
+              eLedoff.style.backgroundColor = '';
+          }
+          else if (msg.LEDstatus === 'bLed50') {
+              eLedon.style.backgroundColor = '';
+              eLed50.style.backgroundColor = 'orange';
+              eLedoff.style.color = '';
+              eLedoff.style.backgroundColor = '';
+          }
+          else if (msg.LEDstatus === 'bLedoff') {
+              eLedon.style.backgroundColor = '';
+              eLed50.style.backgroundColor = '';
+              eLedoff.style.color = 'white';
+              eLedoff.style.backgroundColor = 'black';
+          }
+          else {
+              console.log('unknown event', msg);
+          }
+      });
+  });
+
+function to_px(num_px)
+{
+    return (num_px.toString() + 'px');
+}
+
+function ScaleSize()
+{
+    var round = Math.round;
+    var w = window.innerWidth
+    || document.documentElement.clientWidth
+    || document.body.clientWidth;
+    var h = window.innerHeight
+    || document.documentElement.clientHeight
+    || document.body.clientHeight;
+
+    //var scalePercent = ((document.body.clientWidth / 1280) * 100).toString() + '%';
+    //console.log('scalePercent', scalePercent);
+    var webcam_style = document.getElementById('webcam').style;
+    webcam_style.width = '100%';
+    webcam_style.height = 'auto';
+    var img_webcam_style = document.getElementById('img_webcam').style;
+    img_webcam_style.width = '100%';
+    img_webcam_style.height = 'auto';
+    var overlay_style = document.getElementById('overlay').style;
+    overlay_style.width = '100%';
+    var overlay_h = round(h * 0.25);
+    overlay_style.height = to_px(overlay_h);
+    overlay_style.top = to_px(round(h * 0.75));
+    var overlay_bottom_line = to_px(overlay_h - 50);
+    document.getElementById('bLedon').style.top = overlay_bottom_line;
+    document.getElementById('bLedon').style.left = 0;
+    document.getElementById('bLed50').style.top = overlay_bottom_line;
+    document.getElementById('bLed50').style.left = '72px';
+    document.getElementById('bLedoff').style.top = overlay_bottom_line;
+    document.getElementById('bLedoff').style.left = '144px';
+    document.getElementById('webSockStatus').style.top = overlay_bottom_line;
+    document.getElementById('webSockStatus').style.left = '216px';
+    document.getElementById('bBackward').style.top = overlay_bottom_line;
+    document.getElementById('bBackward').style.left = to_px(w - 2*96);
+    document.getElementById('bLeft').style.top = to_px(overlay_h - 2 *40);
+    document.getElementById('bLeft').style.left = to_px(w - 2.5*96);
+    document.getElementById('bRight').style.top = to_px(overlay_h - 2*40);
+    document.getElementById('bRight').style.left = to_px(w - 96);
+    document.getElementById('bForward').style.top = to_px(overlay_h - 3*40);
+    document.getElementById('bForward').style.left = to_px(w - 2*96);
+    document.getElementById('img_webcam').src =
+        'http://'+window.location.hostname+':8080/?action=stream';
+
+    var target = document.getElementById('target');
+    var img_webcam = document.getElementById('img_webcam');
+    target.style.width = to_px(img_webcam.width);
+    target.style.height = to_px(img_webcam.width/1024*576);
+    console.log(img_webcam.width, target.style.height);
+    target.innerHTML = '<canvas id="canvas_target" width="' +
+        to_px(img_webcam.width) + '" height="' + to_px(target.style.height) +
+        '"</canvas>';
+    var canvas = document.getElementById('canvas_target');
+    canvas.style.top = '0px';
+    canvas.style.left = '0px';
+    //canvas.width = to_px(w);
+    //canvas.height = to_px(h);
+    //canvas.style.width = to_px(w);
+    //canvas.style.height = to_px(h);
+    var ctx = canvas.getContext('2d');
+    // Draw cross hair
+    var mid_width  = parseInt(target.style.width)/2;
+    var mid_height = parseInt(target.style.height)/2;
+    var radius = 100;
+    ctx.strokeStyle = 'white';
+    ctx.arc(mid_width, mid_height, radius, 0 , 2*Math.PI);
+    ctx.stroke();
+    ctx.moveTo(mid_width-radius, mid_height);
+    ctx.lineTo(mid_width+radius, mid_height);
+    ctx.stroke();
+    ctx.moveTo(mid_width, mid_height-radius);
+    ctx.lineTo(mid_width, mid_height+radius);
+    ctx.stroke();
+    ctx.moveTo(mid_width, mid_height);
+    ctx.arc(mid_width, mid_height, 50, 0 , 2*Math.PI);
+    ctx.stroke();
+}
+</script>
+<script>
+function enableTouch(objname) {
+  console.log('enableTouch', objname);
+  var e = document.getElementById(objname);
+  if (e) {
+    e.addEventListener('touchstart', function(event) {
+        event.preventDefault();
+        console.log('touchstart', event);
+        buttondown(e);
+        }, false );
+    e.addEventListener('touchend',   function(event) {
+        console.log('touchend', event);
+        buttonup(e);
+        }, false );
+  }
+  else {
+    console.log(objname, ' not found');
+  }
+}
+
+var WebSockOpen=0;  //0=close,1=opening,2=open
+
+function start() {
+  ScaleSize();
+  WebSockOpen=1;
+  var allButtons = [
+    'bForward',
+    'bBackward',
+    'bRight',
+    'bLeft',
+    'bLedon',
+    'bLed50',
+    'bLedoff'
+  ];
+  for (var i = 0; i < allButtons.length; i++) {
+    enableTouch(allButtons[i]);
+  }
+}
+function buttondown(e) {
+  socket.emit('buttondown', e.id);
+}
+function buttonup(e) {
+  socket.emit('buttonup', e.id);
+}
+</script>
+</head>
+<body onload="javascript:start();" onresize="window.location.reload();">
+<div id="webcam">
+    <img id="img_webcam" alt="Live camera video" />
+</div>
+
+<div id="target">
+    <canvas id="canvas_target" style="border:1px solid #000000;"></canvas>
+</div>
+
+<div id="overlay">
+    <button id="webSockStatus" type="button" onclick="window.location.reload();">Connect</button>
+    <button id="bLedon"  type="button" onclick="buttondown(this);">On</button>
+    <button id="bLed50"  type="button" onclick="buttondown(this);">50%</button>
+    <button id="bLedoff" type="button" onclick="buttondown(this);">Off</button>
+    <button id="bForward" class="directionButton"
+        onmousedown="buttondown(this);" onmouseup="buttonup(this);">Forward</button>
+    <button id="bLeft" class="directionButton"
+        onmousedown="buttondown(this);" onmouseup="buttonup(this);">Left</button>
+    <button id="bRight" class="directionButton"
+        onmousedown="buttondown(this);" onmouseup="buttonup(this);">Right</button>
+    <button id="bBackward" class="directionButton"
+        onmousedown="buttondown(this);" onmouseup="buttonup(this);">Back</button>
+</div>
+</body>
+</html>
